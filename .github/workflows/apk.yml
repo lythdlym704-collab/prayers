@@ -1,0 +1,31 @@
+name: APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: unzip -o *.zip
+      - name: Build
+        working-directory: misbaha
+        run: |
+          npm install
+          npm run fonts
+          npx cap add android
+          sed -i 's/<activity/<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
+          npx @capacitor/assets generate --android --iconBackgroundColor '#02040c' --splashBackgroundColor '#02040c' || true
+          npx cap sync android
+          cd android && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: misbaha-apk
+          path: misbaha/android/app/build/outputs/apk/debug/app-debug.apk
